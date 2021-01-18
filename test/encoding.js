@@ -1,10 +1,10 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
-var collect = require('stream-collector')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
+const collect = require('stream-collector')
 
 tape('add node', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add(null, { msg: 'hello world' }, function (err, node) {
     t.error(err)
@@ -16,20 +16,20 @@ tape('add node', function (t) {
 })
 
 tape('add node with encoding option', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, { msg: 'hello world' }, { valueEncoding: 'json' },
-  function (err, node) {
-    t.error(err)
-    t.ok(node.key, 'has key')
-    t.same(node.links, [])
-    t.same(node.value, { msg: 'hello world' })
-    t.end()
-  })
+    function (err, node) {
+      t.error(err)
+      t.ok(node.key, 'has key')
+      t.same(node.links, [])
+      t.same(node.value, { msg: 'hello world' })
+      t.end()
+    })
 })
 
 tape('append node', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.append({ msg: 'hello world' }, function (err, node) {
     t.error(err)
@@ -41,7 +41,7 @@ tape('append node', function (t) {
 })
 
 tape('append node with encoding option', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.append({ msg: 'hello world' }, { valueEncoding: 'json' }, function (err, node) {
     t.error(err)
@@ -53,7 +53,7 @@ tape('append node with encoding option', function (t) {
 })
 
 tape('add node with links', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add(null, { msg: 'hello' }, function (err, node) {
     t.error(err)
@@ -68,7 +68,7 @@ tape('add node with links', function (t) {
 })
 
 tape('cannot add node with bad links', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add('i-do-not-exist', { msg: 'hello world' }, function (err) {
     t.ok(err, 'had error')
@@ -78,7 +78,7 @@ tape('cannot add node with bad links', function (t) {
 })
 
 tape('heads', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.heads(function (err, heads) {
     t.error(err)
@@ -102,7 +102,7 @@ tape('heads', function (t) {
 })
 
 tape('heads with encoding option', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.heads({ valueEncoding: 'json' }, function (err, heads) {
     t.error(err)
@@ -126,7 +126,7 @@ tape('heads with encoding option', function (t) {
 })
 
 tape('get', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add(null, { msg: 'hello world' }, function (err, node) {
     t.error(err)
@@ -142,7 +142,7 @@ tape('get', function (t) {
 })
 
 tape('get with encoding option', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, { msg: 'hello world' }, { valueEncoding: 'json' }, function (err, node) {
     t.error(err)
@@ -158,7 +158,7 @@ tape('get with encoding option', function (t) {
 })
 
 tape('deduplicates', function (t) {
-  var hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add(null, { msg: 'hello world' }, function (err, node) {
     t.error(err)
@@ -175,15 +175,15 @@ tape('deduplicates', function (t) {
 
 tape('live replication encoding', function (t) {
   t.plan(2)
-  var h0 = hyperlog(memdb(), { valueEncoding: 'json' })
-  var h1 = hyperlog(memdb(), { valueEncoding: 'json' })
+  const h0 = hyperlog(memdb(), { valueEncoding: 'json' })
+  const h1 = hyperlog(memdb(), { valueEncoding: 'json' })
   h1.createReadStream({ live: true })
     .on('data', function (data) {
       t.deepEqual(data.value, { msg: 'hello world' })
     })
 
-  var r0 = h0.replicate({ live: true })
-  var r1 = h1.replicate({ live: true })
+  const r0 = h0.replicate({ live: true })
+  const r1 = h1.replicate({ live: true })
 
   h0.add(null, { msg: 'hello world' }, function (err, node) {
     t.error(err)

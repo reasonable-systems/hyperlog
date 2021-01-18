@@ -1,13 +1,13 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
 
 tape('add and preadd events', function (t) {
   t.plan(13)
-  var hyper = hyperlog(memdb())
-  var expected = [ 'hello', 'world' ]
-  var expectedPre = [ 'hello', 'world' ]
-  var order = []
+  const hyper = hyperlog(memdb())
+  const expected = ['hello', 'world']
+  const expectedPre = ['hello', 'world']
+  const order = []
 
   hyper.on('add', function (node) {
     // at this point, the event has already been added
@@ -27,7 +27,7 @@ tape('add and preadd events', function (t) {
       t.error(err)
       t.ok(node2.key, 'has key')
       t.same(node2.links, [node.key], 'has links')
-      t.same(node2.value, new Buffer('world'))
+      t.same(node2.value, Buffer.from('world'))
       t.deepEqual(order, [
         'preadd hello',
         'add hello',

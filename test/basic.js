@@ -1,22 +1,22 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
-var collect = require('stream-collector')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
+const collect = require('stream-collector')
 
 tape('add node', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, 'hello world', function (err, node) {
     t.error(err)
     t.ok(node.key, 'has key')
     t.same(node.links, [])
-    t.same(node.value, new Buffer('hello world'))
+    t.same(node.value, Buffer.from('hello world'))
     t.end()
   })
 })
 
 tape('add node with links', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, 'hello', function (err, node) {
     t.error(err)
@@ -24,14 +24,14 @@ tape('add node with links', function (t) {
       t.error(err)
       t.ok(node2.key, 'has key')
       t.same(node2.links, [node.key], 'has links')
-      t.same(node2.value, new Buffer('world'))
+      t.same(node2.value, Buffer.from('world'))
       t.end()
     })
   })
 })
 
 tape('cannot add node with bad links', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add('i-do-not-exist', 'hello world', function (err) {
     t.ok(err, 'had error')
@@ -41,7 +41,7 @@ tape('cannot add node with bad links', function (t) {
 })
 
 tape('heads', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.heads(function (err, heads) {
     t.error(err)
@@ -65,7 +65,7 @@ tape('heads', function (t) {
 })
 
 tape('deduplicates', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, 'hello world', function (err, node) {
     t.error(err)
@@ -81,9 +81,9 @@ tape('deduplicates', function (t) {
 })
 
 tape('deduplicates -- same batch', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
-  var doc = { links: [], value: 'hello world' }
+  const doc = { links: [], value: 'hello world' }
 
   hyper.batch([doc, doc], function (err, nodes) {
     t.error(err)
@@ -97,9 +97,9 @@ tape('deduplicates -- same batch', function (t) {
 })
 
 tape('bug repro: bad insert links results in correct preadd/add/reject counts', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
-  var pending = 0
+  let pending = 0
   hyper.on('preadd', function (node) { pending++ })
   hyper.on('add', function (node) { pending-- })
   hyper.on('reject', function (node) { pending-- })

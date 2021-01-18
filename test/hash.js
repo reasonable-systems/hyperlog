@@ -1,28 +1,28 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
-var framedHash = require('framed-hash')
-var multihashing = require('multihashing')
-var base58 = require('bs58')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
+const framedHash = require('framed-hash')
+const multihashing = require('multihashing')
+const base58 = require('bs58')
 
-var sha1 = function (links, value) {
-  var hash = framedHash('sha1')
-  for (var i = 0; i < links.length; i++) hash.update(links[i])
+const sha1 = function (links, value) {
+  const hash = framedHash('sha1')
+  for (let i = 0; i < links.length; i++) hash.update(links[i])
   hash.update(value)
   return hash.digest('hex')
 }
 
-var asyncSha2 = function (links, value, cb) {
+const asyncSha2 = function (links, value, cb) {
   process.nextTick(function () {
-    var prevalue = value.toString()
+    let prevalue = value.toString()
     links.forEach(function (link) { prevalue += link })
-    var result = base58.encode(multihashing(prevalue, 'sha2-256'))
+    const result = base58.encode(multihashing(prevalue, 'sha2-256'))
     cb(null, result)
   })
 }
 
 tape('add node using sha1', function (t) {
-  var hyper = hyperlog(memdb(), {
+  const hyper = hyperlog(memdb(), {
     hash: sha1
   })
 
@@ -34,7 +34,7 @@ tape('add node using sha1', function (t) {
 })
 
 tape('add node with links using sha1', function (t) {
-  var hyper = hyperlog(memdb(), {
+  const hyper = hyperlog(memdb(), {
     hash: sha1
   })
 
@@ -50,7 +50,7 @@ tape('add node with links using sha1', function (t) {
 })
 
 tape('add node using async multihash', function (t) {
-  var hyper = hyperlog(memdb(), {
+  const hyper = hyperlog(memdb(), {
     asyncHash: asyncSha2
   })
 
@@ -62,7 +62,7 @@ tape('add node using async multihash', function (t) {
 })
 
 tape('add node with links using async multihash', function (t) {
-  var hyper = hyperlog(memdb(), {
+  const hyper = hyperlog(memdb(), {
     asyncHash: asyncSha2
   })
 
@@ -82,11 +82,11 @@ tape('add node with links using async multihash', function (t) {
 })
 
 tape('preadd event with async hash', function (t) {
-  var hyper = hyperlog(memdb(), {
+  const hyper = hyperlog(memdb(), {
     asyncHash: asyncSha2
   })
 
-  var prenode = null
+  let prenode = null
   hyper.on('preadd', function (node) {
     prenode = node
   })

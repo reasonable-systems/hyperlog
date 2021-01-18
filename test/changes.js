@@ -1,10 +1,10 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
-var collect = require('stream-collector')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
+const collect = require('stream-collector')
 
 tape('changes', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, 'a', function (err, a) {
     t.error(err)
@@ -23,7 +23,7 @@ tape('changes', function (t) {
 })
 
 tape('changes since', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
   hyper.add(null, 'a', function (err, a) {
     t.error(err)
@@ -31,7 +31,7 @@ tape('changes since', function (t) {
       t.error(err)
       hyper.add(null, 'c', function (err, c) {
         t.error(err)
-        collect(hyper.createReadStream({since: 2}), function (err, changes) {
+        collect(hyper.createReadStream({ since: 2 }), function (err, changes) {
           t.error(err)
           t.same(changes, [c], 'has 1 change')
           t.end()
@@ -42,12 +42,12 @@ tape('changes since', function (t) {
 })
 
 tape('live changes', function (t) {
-  var hyper = hyperlog(memdb())
-  var expects = ['a', 'b', 'c']
+  const hyper = hyperlog(memdb())
+  const expects = ['a', 'b', 'c']
 
-  hyper.createReadStream({live: true})
+  hyper.createReadStream({ live: true })
     .on('data', function (data) {
-      var next = expects.shift()
+      const next = expects.shift()
       t.same(data.value.toString(), next, 'was expected value')
       if (!expects.length) t.end()
     })
@@ -60,11 +60,11 @@ tape('live changes', function (t) {
 })
 
 tape('parallel add orders changes', function (t) {
-  var hyper = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
 
-  var missing = 3
-  var values = {}
-  var done = function () {
+  let missing = 3
+  const values = {}
+  const done = function () {
     if (--missing) return
     collect(hyper.createReadStream(), function (err, changes) {
       t.error(err)
@@ -72,7 +72,7 @@ tape('parallel add orders changes', function (t) {
         t.same(c.change, i + 1, 'correct change number')
         values[c.value.toString()] = true
       })
-      t.same(values, {a: true, b: true, c: true}, 'contains all values')
+      t.same(values, { a: true, b: true, c: true }, 'contains all values')
       t.end()
     })
   }

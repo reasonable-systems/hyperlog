@@ -1,12 +1,12 @@
-var hyperlog = require('../')
-var memdb = require('memdb')
+const hyperlog = require('../')
+const memdb = require('memdb')
 
-var log = hyperlog(memdb())
-var clone = hyperlog(memdb())
+const log = hyperlog(memdb())
+const clone = hyperlog(memdb())
 
-var sync = function (a, b) {
-  a = a.createReplicationStream({mode: 'push'})
-  b = b.createReplicationStream({mode: 'pull'})
+const sync = function (a, b) {
+  a = a.createReplicationStream({ mode: 'push' })
+  b = b.createReplicationStream({ mode: 'pull' })
 
   a.on('push', function () {
     console.log('a pushed')
@@ -35,7 +35,7 @@ var sync = function (a, b) {
   a.pipe(b).pipe(a)
 }
 
-clone.createReadStream({live: true}).on('data', function (data) {
+clone.createReadStream({ live: true }).on('data', function (data) {
   console.log('change: (%d) %s', data.change, data.key)
 })
 

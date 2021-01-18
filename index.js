@@ -1,47 +1,47 @@
-var after = require('after-all')
-var lexint = require('lexicographic-integer')
-var collect = require('stream-collector')
-var through = require('through2')
-var pump = require('pump')
-var from = require('from2')
-var mutexify = require('mutexify')
-var cuid = require('cuid')
-var logs = require('level-logs')
-var events = require('events')
-var util = require('util')
-var enumerate = require('level-enumerate')
-var replicate = require('./lib/replicate')
-var messages = require('./lib/messages')
-var hash = require('./lib/hash')
-var encoder = require('./lib/encode')
-var defined = require('defined')
-var parallel = require('run-parallel')
-var waterfall = require('run-waterfall')
+const after = require('after-all')
+const lexint = require('lexicographic-integer')
+const collect = require('stream-collector')
+const through = require('through2')
+const pump = require('pump')
+const from = require('from2')
+const mutexify = require('mutexify')
+const cuid = require('cuid')
+const logs = require('level-logs')
+const events = require('events')
+const util = require('util')
+const enumerate = require('level-enumerate')
+const replicate = require('./lib/replicate')
+const messages = require('./lib/messages')
+const hash = require('./lib/hash')
+const encoder = require('./lib/encode')
+const defined = require('defined')
+const parallel = require('run-parallel')
+const waterfall = require('run-waterfall')
 
-var ID = '!!id'
-var CHANGES = '!changes!'
-var NODES = '!nodes!'
-var HEADS = '!heads!'
+const ID = '!!id'
+const CHANGES = '!changes!'
+const NODES = '!nodes!'
+const HEADS = '!heads!'
 
-var INVALID_SIGNATURE = new Error('Invalid signature')
-var CHECKSUM_MISMATCH = new Error('Checksum mismatch')
-var INVALID_LOG = new Error('Invalid log sequence')
+const INVALID_SIGNATURE = new Error('Invalid signature')
+const CHECKSUM_MISMATCH = new Error('Checksum mismatch')
+const INVALID_LOG = new Error('Invalid log sequence')
 
 INVALID_LOG.notFound = true
 INVALID_LOG.status = 404
 
-var noop = function () {}
+const noop = function () {}
 
-var Hyperlog = function (db, opts) {
+const Hyperlog = function (db, opts) {
   if (!(this instanceof Hyperlog)) return new Hyperlog(db, opts)
   if (!opts) opts = {}
 
   events.EventEmitter.call(this)
 
   this.id = defined(opts.id, null)
-  this.enumerate = enumerate(db, {prefix: 'enum'})
+  this.enumerate = enumerate(db, { prefix: 'enum' })
   this.db = db
-  this.logs = logs(db, {prefix: 'logs', valueEncoding: messages.Entry})
+  this.logs = logs(db, { prefix: 'logs', valueEncoding: messages.Entry })
   this.lock = defined(opts.lock, mutexify())
   this.changes = 0
   this.setMaxListeners(0)
@@ -53,9 +53,9 @@ var Hyperlog = function (db, opts) {
   this.asyncHash = defined(opts.asyncHash, null)
 
   // Retrieve this hyperlog instance's unique ID.
-  var self = this
-  var getId = defined(opts.getId, function (cb) {
-    db.get(ID, {valueEncoding: 'utf-8'}, function (_, id) {
+  const self = this
+  const getId = defined(opts.getId, function (cb) {
+    db.get(ID, { valueEncoding: 'utf-8' }, function (_, id) {
       if (id) return cb(null, id)
       id = cuid()
       db.put(ID, id, function () {
@@ -72,7 +72,7 @@ var Hyperlog = function (db, opts) {
   // can be performed -- these two values MUST be known before any
   // hyperlog usage may occur.
   this.lock(function (release) {
-    collect(db.createKeyStream({gt: CHANGES, lt: CHANGES + '~', reverse: true, limit: 1}), function (_, keys) {
+    collect(db.createKeyStream({ gt: CHANGES, lt: CHANGES + '~', reverse: true, limit: 1 }), function (_, keys) {
       self.changes = Math.max(self.changes, keys && keys.length ? lexint.unpack(keys[0].split('!').pop(), 'hex') : 0)
       if (self.id) return release()
       getId(function (_, id) {
@@ -99,20 +99,20 @@ Hyperlog.prototype.ready = function (cb) {
 // Returns a readable stream of all hyperlog heads. That is, all nodes that no
 // other nodes link to.
 Hyperlog.prototype.heads = function (opts, cb) {
-  var self = this
+  const self = this
   if (!opts) opts = {}
   if (typeof opts === 'function') {
     cb = opts
     opts = {}
   }
 
-  var rs = this.db.createValueStream({
+  const rs = this.db.createValueStream({
     gt: HEADS,
     lt: HEADS + '~',
     valueEncoding: 'utf-8'
   })
 
-  var format = through.obj(function (key, enc, cb) {
+  const format = through.obj(function (key, enc, cb) {
     self.get(key, opts, cb)
   })
 
@@ -126,10 +126,10 @@ Hyperlog.prototype.get = function (key, opts, cb) {
     cb = opts
     opts = {}
   }
-  var self = this
-  this.db.get(NODES + key, {valueEncoding: 'binary'}, function (err, buf) {
+  const self = this
+  this.db.get(NODES + key, { valueEncoding: 'binary' }, function (err, buf) {
     if (err) return cb(err)
-    var node = messages.Node.decode(buf)
+    const node = messages.Node.decode(buf)
     node.value = encoder.decode(node.value, opts.valueEncoding || self.valueEncoding)
     cb(null, node)
   })
@@ -137,46 +137,46 @@ Hyperlog.prototype.get = function (key, opts, cb) {
 
 // Utility function to be used in a nodes.reduce() to determine the largest
 // change # present.
-var maxChange = function (max, cur) {
+const maxChange = function (max, cur) {
   return Math.max(max, cur.change)
 }
 
 // Consumes either a string or a hyperlog node and returns its key.
-var toKey = function (link) {
+const toKey = function (link) {
   return typeof link !== 'string' ? link.key : link
 }
 
 // Adds a new hyperlog node to an existing array of leveldb batch insertions.
 // This includes performing crypto signing and verification.
 // Performs deduplication; returns the existing node if alreay present in the hyperlog.
-var addBatchAndDedupe = function (dag, node, logLinks, batch, opts, cb) {
+const addBatchAndDedupe = function (dag, node, logLinks, batch, opts, cb) {
   if (opts.hash && node.key !== opts.hash) return cb(CHECKSUM_MISMATCH)
   if (opts.seq && node.seq !== opts.seq) return cb(INVALID_LOG)
 
-  var log = {
+  const log = {
     change: node.change,
     node: node.key,
     links: logLinks
   }
 
-  var onclone = function (clone) {
+  const onclone = function (clone) {
     if (!opts.log) return cb(null, clone, [])
-    batch.push({type: 'put', key: dag.logs.key(node.log, node.seq), value: messages.Entry.encode(log)})
+    batch.push({ type: 'put', key: dag.logs.key(node.log, node.seq), value: messages.Entry.encode(log) })
     cb(null, clone)
   }
 
-  var done = function () {
+  const done = function () {
     dag.get(node.key, { valueEncoding: 'binary' }, function (_, clone) {
       // This node already exists somewhere in the hyperlog; add it to the
       // log's append-only log, but don't insert it again.
       if (clone) return onclone(clone)
 
-      var links = node.links
-      for (var i = 0; i < links.length; i++) batch.push({type: 'del', key: HEADS + links[i]})
-      batch.push({type: 'put', key: CHANGES + lexint.pack(node.change, 'hex'), value: node.key})
-      batch.push({type: 'put', key: NODES + node.key, value: messages.Node.encode(node)})
-      batch.push({type: 'put', key: HEADS + node.key, value: node.key})
-      batch.push({type: 'put', key: dag.logs.key(node.log, node.seq), value: messages.Entry.encode(log)})
+      const links = node.links
+      for (let i = 0; i < links.length; i++) batch.push({ type: 'del', key: HEADS + links[i] })
+      batch.push({ type: 'put', key: CHANGES + lexint.pack(node.change, 'hex'), value: node.key })
+      batch.push({ type: 'put', key: NODES + node.key, value: messages.Node.encode(node) })
+      batch.push({ type: 'put', key: HEADS + node.key, value: node.key })
+      batch.push({ type: 'put', key: dag.logs.key(node.log, node.seq), value: messages.Entry.encode(log) })
 
       cb(null, node)
     })
@@ -202,34 +202,34 @@ var addBatchAndDedupe = function (dag, node, logLinks, batch, opts, cb) {
   }
 }
 
-var getLinks = function (dag, id, links, cb) {
-  var logLinks = []
-  var nextLink = function () {
-    var cb = next()
+const getLinks = function (dag, id, links, cb) {
+  const logLinks = []
+  const nextLink = function () {
+    const cb = next()
     return function (err, link) {
       if (err) return cb(err)
       if (link.log !== id && logLinks.indexOf(link.log) === -1) logLinks.push(link.log)
       cb(null)
     }
   }
-  var next = after(function (err) {
+  const next = after(function (err) {
     if (err) cb(err)
     else cb(null, logLinks)
   })
 
-  for (var i = 0; i < links.length; i++) {
+  for (let i = 0; i < links.length; i++) {
     dag.get(links[i], nextLink())
   }
 }
 
 // Produce a readable stream of all nodes added from this point onward, in
 // topographic order.
-var createLiveStream = function (dag, opts) {
-  var since = opts.since || 0
-  var limit = opts.limit || -1
-  var wait = null
+const createLiveStream = function (dag, opts) {
+  let since = opts.since || 0
+  let limit = opts.limit || -1
+  let wait = null
 
-  var read = function (size, cb) {
+  const read = function (size, cb) {
     if (dag.changes <= since) {
       wait = cb
       return
@@ -248,9 +248,9 @@ var createLiveStream = function (dag, opts) {
     })
   }
 
-  var kick = function () {
+  const kick = function () {
     if (!wait) return
-    var cb = wait
+    const cb = wait
     wait = null
     read(0, cb)
   }
@@ -258,7 +258,7 @@ var createLiveStream = function (dag, opts) {
   dag.on('add', kick)
   dag.ready(kick)
 
-  var rs = from.obj(read)
+  const rs = from.obj(read)
 
   rs.once('close', function () {
     dag.removeListener('add', kick)
@@ -275,11 +275,11 @@ Hyperlog.prototype.createReadStream = function (opts) {
   }
   if (opts.live) return createLiveStream(this, opts)
 
-  var self = this
-  var since = opts.since || 0
-  var until = opts.until || 0
+  const self = this
+  const since = opts.since || 0
+  const until = opts.until || 0
 
-  var keys = this.db.createValueStream({
+  const keys = this.db.createValueStream({
     gt: CHANGES + lexint.pack(since, 'hex'),
     lt: CHANGES + (until ? lexint.pack(until, 'hex') : '~'),
     valueEncoding: 'utf-8',
@@ -287,7 +287,7 @@ Hyperlog.prototype.createReadStream = function (opts) {
     limit: opts.limit
   })
 
-  var get = function (key, enc, cb) {
+  const get = function (key, enc, cb) {
     self.get(key, opts, cb)
   }
 
@@ -305,7 +305,7 @@ Hyperlog.prototype.add = function (links, value, opts, cb) {
     opts = {}
   }
   if (!cb) cb = noop
-  this.batch([{links: links, value: value}], opts, function (err, nodes) {
+  this.batch([{ links: links, value: value }], opts, function (err, nodes) {
     if (err) cb(err)
     else cb(null, nodes[0])
   })
@@ -323,22 +323,22 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
   // Bail asynchronously; nothing to add.
   if (docs.length === 0) return process.nextTick(function () { cb(null, []) })
 
-  var self = this
-  var id = opts.log || self.id
+  const self = this
+  const id = opts.log || self.id
   opts.log = id
 
-  var logLinks = {}
-  var lockRelease = null
-  var latestSeq
+  const logLinks = {}
+  let lockRelease = null
+  let latestSeq
 
   // Bubble up errors on non-batch (1 element) calls.
-  var bubbleUpErrors = false
+  let bubbleUpErrors = false
   if (docs.length === 1) {
     bubbleUpErrors = true
   }
 
   // 1. construct initial hyperlog "node" for each of "docs"
-  var nodes = docs.map(function (doc) {
+  const nodes = docs.map(function (doc) {
     return constructInitialNode(doc, opts)
   })
 
@@ -414,7 +414,7 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
   // Hashes and finds links for the given nodes. If some nodes fail to hash to
   // have their links found, they are rejected and not returned in the results.
   function hashNodesAndFindLinks (nodes, done) {
-    var goodNodes = []
+    const goodNodes = []
 
     parallel(
       nodes.map(function (node) {
@@ -462,11 +462,11 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
   }
 
   function dedupeNodes (nodes, seq, done) {
-    var goodNodes = []
+    const goodNodes = []
 
-    var added = nodes.length > 1 ? {} : null
-    var seqIdx = 1
-    var changeIdx = 1
+    const added = nodes.length > 1 ? {} : null
+    let seqIdx = 1
+    let changeIdx = 1
 
     waterfall(
       nodes.map(function (node) {
@@ -508,8 +508,8 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
   }
 
   function computeBatchNodeOperations (nodes, done) {
-    var batch = []
-    var goodNodes = []
+    let batch = []
+    const goodNodes = []
 
     waterfall(
       nodes.map(function (node) {
@@ -533,8 +533,8 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
 
     // Create a new leveldb batch operation for this node.
     function computeNodeBatchOp (node, done) {
-      var batch = []
-      var links = logLinks[node.key]
+      const batch = []
+      const links = logLinks[node.key]
       addBatchAndDedupe(self, node, links, batch, opts, function (err, newNode) {
         if (err) return done(err)
         newNode.value = encoder.decode(newNode.value, opts.valueEncoding || self.valueEncoding)
@@ -544,11 +544,11 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
   }
 
   function constructInitialNode (doc, opts) {
-    var links = doc.links || []
+    let links = doc.links || []
     if (!Array.isArray(links)) links = [links]
     links = links.map(toKey)
 
-    var encodedValue = encoder.encode(doc.value, opts.valueEncoding || self.valueEncoding)
+    const encodedValue = encoder.encode(doc.value, opts.valueEncoding || self.valueEncoding)
     return {
       log: opts.log || self.id,
       key: null,
@@ -563,7 +563,7 @@ Hyperlog.prototype.batch = function (docs, opts, cb) {
     if (self.asyncHash) {
       self.asyncHash(node.links, node.value, done)
     } else {
-      var key = self.hash(node.links, node.value)
+      const key = self.hash(node.links, node.value)
       done(null, key)
     }
   }
@@ -576,7 +576,7 @@ Hyperlog.prototype.append = function (value, opts, cb) {
   }
   if (!cb) cb = noop
   if (!opts) opts = {}
-  var self = this
+  const self = this
 
   this.lock(function (release) {
     self.heads(function (err, heads) {

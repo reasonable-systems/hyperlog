@@ -1,13 +1,13 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
 
 tape('batch', function (t) {
   t.plan(10)
-  var log = hyperlog(memdb(), { valueEncoding: 'utf8' })
+  const log = hyperlog(memdb(), { valueEncoding: 'utf8' })
   log.add(null, 'A', function (err, node) {
     t.error(err)
-    var ops = [
+    const ops = [
       { links: [node.key], value: 'B' },
       { links: [node.key], value: 'C' },
       { links: [node.key], value: 'D' }
@@ -37,10 +37,10 @@ tape('batch', function (t) {
 tape('batch dedupe', function (t) {
   t.plan(6)
 
-  var doc1 = { links: [], value: 'hello world' }
-  var doc2 = { links: [], value: 'hello world 2' }
+  const doc1 = { links: [], value: 'hello world' }
+  const doc2 = { links: [], value: 'hello world 2' }
 
-  var hyper = hyperlog(memdb(), { valueEncoding: 'utf8' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'utf8' })
 
   hyper.batch([doc1], function (err) {
     t.error(err)
@@ -59,10 +59,10 @@ tape('batch dedupe', function (t) {
 tape('batch dedupe 2', function (t) {
   t.plan(4)
 
-  var doc1 = { links: [], value: 'hello world' }
-  var doc2 = { links: [], value: 'hello world 2' }
+  const doc1 = { links: [], value: 'hello world' }
+  const doc2 = { links: [], value: 'hello world 2' }
 
-  var hyper = hyperlog(memdb(), { valueEncoding: 'utf8' })
+  const hyper = hyperlog(memdb(), { valueEncoding: 'utf8' })
 
   hyper.batch([doc1], function (err) {
     t.error(err)

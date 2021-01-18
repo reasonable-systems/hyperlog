@@ -1,19 +1,19 @@
-var hyperlog = require('../')
-var tape = require('tape')
-var memdb = require('memdb')
-var pump = require('pump')
-var through = require('through2')
+const hyperlog = require('../')
+const tape = require('tape')
+const memdb = require('memdb')
+const pump = require('pump')
+const through = require('through2')
 
-var sync = function (a, b, cb) {
-  var stream = a.replicate()
+const sync = function (a, b, cb) {
+  const stream = a.replicate()
   pump(stream, b.replicate(), stream, cb)
 }
 
-var toJSON = function (log, cb) {
-  var map = {}
+const toJSON = function (log, cb) {
+  const map = {}
   log.createReadStream()
     .on('data', function (node) {
-      map[node.key] = {value: node.value, links: node.links}
+      map[node.key] = { value: node.value, links: node.links }
     })
     .on('end', function () {
       cb(null, map)
@@ -21,8 +21,8 @@ var toJSON = function (log, cb) {
 }
 
 tape('clones', function (t) {
-  var hyper = hyperlog(memdb())
-  var clone = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
+  const clone = hyperlog(memdb())
 
   hyper.add(null, 'a', function () {
     hyper.add(null, 'b', function () {
@@ -44,8 +44,8 @@ tape('clones', function (t) {
 })
 
 tape('clones with valueEncoding', function (t) {
-  var hyper = hyperlog(memdb(), {valueEncoding: 'json'})
-  var clone = hyperlog(memdb(), {valueEncoding: 'json'})
+  const hyper = hyperlog(memdb(), { valueEncoding: 'json' })
+  const clone = hyperlog(memdb(), { valueEncoding: 'json' })
 
   hyper.add(null, 'a', function () {
     hyper.add(null, 'b', function () {
@@ -67,8 +67,8 @@ tape('clones with valueEncoding', function (t) {
 })
 
 tape('syncs with initial subset', function (t) {
-  var hyper = hyperlog(memdb())
-  var clone = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
+  const clone = hyperlog(memdb())
 
   clone.add(null, 'a', function () {
     hyper.add(null, 'a', function () {
@@ -92,8 +92,8 @@ tape('syncs with initial subset', function (t) {
 })
 
 tape('syncs with initial superset', function (t) {
-  var hyper = hyperlog(memdb())
-  var clone = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
+  const clone = hyperlog(memdb())
 
   clone.add(null, 'd', function () {
     hyper.add(null, 'a', function () {
@@ -117,10 +117,10 @@ tape('syncs with initial superset', function (t) {
 })
 
 tape('process', function (t) {
-  var hyper = hyperlog(memdb())
-  var clone = hyperlog(memdb())
+  const hyper = hyperlog(memdb())
+  const clone = hyperlog(memdb())
 
-  var process = function (node, enc, cb) {
+  const process = function (node, enc, cb) {
     setImmediate(function () {
       cb(null, node)
     })
@@ -129,8 +129,8 @@ tape('process', function (t) {
   hyper.add(null, 'a', function () {
     hyper.add(null, 'b', function () {
       hyper.add(null, 'c', function () {
-        var stream = hyper.replicate()
-        pump(stream, clone.replicate({process: through.obj(process)}), stream, function () {
+        const stream = hyper.replicate()
+        pump(stream, clone.replicate({ process: through.obj(process) }), stream, function () {
           toJSON(clone, function (err, map1) {
             t.error(err)
             toJSON(hyper, function (err, map2) {
@@ -147,11 +147,11 @@ tape('process', function (t) {
 
 // bugfix: previously replication would not terminate
 tape('shared history with duplicates', function (t) {
-  var hyper1 = hyperlog(memdb())
-  var hyper2 = hyperlog(memdb())
+  const hyper1 = hyperlog(memdb())
+  const hyper2 = hyperlog(memdb())
 
-  var doc1 = { links: [], value: 'a' }
-  var doc2 = { links: [], value: 'b' }
+  const doc1 = { links: [], value: 'a' }
+  const doc2 = { links: [], value: 'b' }
 
   hyper1.batch([doc1], function (err) {
     t.error(err)
